@@ -27,100 +27,93 @@ use blurz::bluetooth_discovery_session::BluetoothDiscoverySession as BluetoothDi
 #[cfg(not(any(target_os = "linux")))]
 use empty::BluetoothDiscoverySession as BluetoothDiscoverySessionEmpty;
 
+use std::cell::RefCell;
+use std::sync::Arc;
 use std::error::Error;
 
 #[derive(Clone, Debug)]
 pub struct BluetoothAdapter {
     #[cfg(all(target_os = "linux", feature = "bluetooth"))]
-    adapter: BluetoothAdapterBluez,
+    adapter: Arc<BluetoothAdapterBluez>,
     #[cfg(not(any(target_os = "linux")))]
-    adapter: BluetoothAdapterEmpty,
+    adapter: Arc<BluetoothAdapterEmpty>,
 }
 
 #[derive(Debug)]
 pub struct BluetoothDiscoverySession {
+    adapter: RefCell<BluetoothAdapter>,
     #[cfg(all(target_os = "linux", feature = "bluetooth"))]
-    session: BluetoothDiscoverySessionBluez,
+    session: Arc<BluetoothDiscoverySessionBluez>,
     #[cfg(not(any(target_os = "linux")))]
-    session: BluetoothDiscoverySessionEmpty,
+    session: Arc<BluetoothDiscoverySessionEmpty>,
 }
 
 #[derive(Clone, Debug)]
 pub struct BluetoothDevice {
+    adapter: RefCell<BluetoothAdapter>,
     #[cfg(all(target_os = "linux", feature = "bluetooth"))]
-    device: BluetoothDeviceBluez,
+    device: Arc<BluetoothDeviceBluez>,
     #[cfg(not(any(target_os = "linux")))]
-    device: BluetoothDeviceEmpty,
+    device: Arc<BluetoothDeviceEmpty>,
 }
 
 #[derive(Clone, Debug)]
 pub struct BluetoothGATTService {
+    device: RefCell<BluetoothDevice>,
     #[cfg(all(target_os = "linux", feature = "bluetooth"))]
-    gatt_service: BluetoothGATTServiceBluez,
+    gatt_service: Arc<BluetoothGATTServiceBluez>,
     #[cfg(not(any(target_os = "linux")))]
-    gatt_service: BluetoothGATTServiceEmpty,
+    gatt_service: Arc<BluetoothGATTServiceEmpty>,
 }
 
 #[derive(Clone, Debug)]
 pub struct BluetoothGATTCharacteristic {
+    service: RefCell<BluetoothGATTService>,
     #[cfg(all(target_os = "linux", feature = "bluetooth"))]
-    gatt_characteristic: BluetoothGATTCharacteristicBluez,
+    gatt_characteristic: Arc<BluetoothGATTCharacteristicBluez>,
     #[cfg(not(any(target_os = "linux")))]
-    gatt_characteristic: BluetoothGATTCharacteristicEmpty,
+    gatt_characteristic: Arc<BluetoothGATTCharacteristicEmpty>,
 }
 
 #[derive(Clone, Debug)]
 pub struct BluetoothGATTDescriptor {
+    characteristic: RefCell<BluetoothGATTCharacteristic>,
     #[cfg(all(target_os = "linux", feature = "bluetooth"))]
-    gatt_descriptor: BluetoothGATTDescriptorBluez,
+    gatt_descriptor: Arc<BluetoothGATTDescriptorBluez>,
     #[cfg(not(any(target_os = "linux")))]
-    gatt_descriptor: BluetoothGATTDescriptorEmpty,
+    gatt_descriptor: Arc<BluetoothGATTDescriptorEmpty>,
 }
 
 impl BluetoothAdapter {
     #[cfg(all(target_os = "linux", feature = "bluetooth"))]
     pub fn init() -> Result<BluetoothAdapter, Box<Error>> {
         let bluez_adapter = try!(BluetoothAdapterBluez::init());
-        Ok(BluetoothAdapter::new(bluez_adapter))
+        Ok(BluetoothAdapter {adapter: Arc::new(bluez_adapter)})
     }
 
     #[cfg(not(any(target_os = "linux")))]
     pub fn init() -> Result<BluetoothAdapter, Box<Error>> {
         let adapter = try!(BluetoothAdapterEmpty::init());
-        Ok(BluetoothAdapter::new(adapter))
+        Ok(BluetoothAdapter {adapter: Arc::new(adapter)})
     }
 
     #[cfg(all(target_os = "linux", feature = "bluetooth"))]
-    fn new(adapter: BluetoothAdapterBluez) -> BluetoothAdapter {
-        BluetoothAdapter {
-            adapter: adapter,
-        }
-    }
-
-    #[cfg(not(any(target_os = "linux")))]
-    fn new(adapter: BluetoothAdapterEmpty) -> BluetoothAdapter {
-        BluetoothAdapter {
-            adapter: adapter,
-        }
-    }
-
-    #[cfg(all(target_os = "linux", feature = "bluetooth"))]
-    fn get_adapter(&self) -> BluetoothAdapterBluez {
+    fn get_adapter(&self) -> Arc<BluetoothAdapterBluez> {
         self.adapter.clone()
     }
 
     #[cfg(not(any(target_os = "linux")))]
-    fn get_adapter(&self) -> &BluetoothAdapterEmpty {
-        &self.adapter
+    fn get_adapter(&self) -> Arc<BluetoothAdapterEmpty> {
+        self.adapter.clone()
     }
 
-    pub fn get_object_path(&self) -> String {
-        self.get_adapter().get_object_path()
+    pub fn get_id(&self) -> String {
+        self.get_adapter().get_id()
     }
 
     pub fn get_devices(&self) -> Result<Vec<BluetoothDevice>, Box<Error>> {
         let device_list = try!(self.get_adapter().get_device_list());
-        Ok(device_list.into_iter().map(|device| BluetoothDevice::create_device(device)).collect())
+        Ok(device_list.into_iter().map(|device| BluetoothDevice::create_device(self.clone(), device)).collect())
     }
 
     pub fn get_device(&self, address: String) -> Result<Option<BluetoothDevice>, Box<Error>> {
@@ -197,6 +190,10 @@ impl BluetoothAdapter {
         self.get_adapter().is_discovering()
     }
 
+    pub fn create_discovery_session(&self) -> Result<BluetoothDiscoverySession, Box<Error>> {
+        BluetoothDiscoverySession::create_session(self.clone())
+    }
+
     pub fn get_uuids(&self) -> Result<Vec<String>, Box<Error>> {
         self.get_adapter().get_uuids()
     }
@@ -225,28 +222,24 @@ impl BluetoothAdapter {
 impl BluetoothDiscoverySession {
     #[cfg(all(target_os = "linux", feature = "bluetooth"))]
     pub fn create_session(adapter: BluetoothAdapter) -> Result<BluetoothDiscoverySession, Box<Error>> {
-        let bluez_session = try!(BluetoothDiscoverySessionBluez::create_session(adapter.get_object_path()));
-        Ok(BluetoothDiscoverySession::new(bluez_session))
-    }
-
-    #[cfg(all(target_os = "linux", feature = "bluetooth"))]
-    fn new(session: BluetoothDiscoverySessionBluez) -> BluetoothDiscoverySession {
-        BluetoothDiscoverySession {
-            session: session,
-        }
+        let bluez_session = try!(BluetoothDiscoverySessionBluez::create_session(adapter.get_id()));
+        Ok(BluetoothDiscoverySession{
+            adapter: RefCell::new(adapter),
+            session: Arc::new(bluez_session),
+        })
     }
 
     #[cfg(not(any(target_os = "linux")))]
     pub fn create_session(adapter: BluetoothAdapter) -> Result<BluetoothDiscoverySession, Box<Error>> {
-        let session = try!(BluetoothDiscoverySessionEmpty::create_session(adapter.get_adapter()));
-        Ok(BluetoothDiscoverySession::new(session))
+        let empty_session = try!(BluetoothDiscoverySessionEmpty::create_session(adapter.get_adapter()));
+        Ok(BluetoothDiscoverySession{
+            adapter: RefCell::new(adapter),
+            session: Arc::new(empty_session),
+        })
     }
 
-    #[cfg(not(any(target_os = "linux")))]
-    fn new(session: BluetoothDiscoverySessionEmpty) -> BluetoothDiscoverySession {
-        BluetoothDiscoverySession {
-            session: session,
-        }
+    pub fn get_adapter(&self) -> BluetoothAdapter {
+        self.adapter.borrow_mut().clone()
     }
 
     pub fn start_discovery(&self) -> Result<(), Box<Error>> {
@@ -260,43 +253,37 @@ impl BluetoothDiscoverySession {
 
 impl BluetoothDevice {
     #[cfg(all(target_os = "linux", feature = "bluetooth"))]
-    fn new(device: BluetoothDeviceBluez) -> BluetoothDevice {
-        BluetoothDevice {
-            device: device,
-        }
-    }
-
-    #[cfg(all(target_os = "linux", feature = "bluetooth"))]
-    pub fn create_device(device: String) -> BluetoothDevice {
-        BluetoothDevice::new(
-            BluetoothDeviceBluez::new(device.clone()))
-    }
-
-    #[cfg(not(any(target_os = "linux")))]
-    fn new(device: BluetoothDeviceEmpty) -> BluetoothDevice {
-        BluetoothDevice {
-            device: device,
+    pub fn create_device(adapter: BluetoothAdapter, device: String) -> BluetoothDevice {
+        BluetoothDevice{
+            adapter: RefCell::new(adapter),
+            device: Arc::new(BluetoothDeviceBluez::new(device.clone())),
         }
     }
 
     #[cfg(not(any(target_os = "linux")))]
-    pub fn create_device(device: String) -> BluetoothDevice {
-        BluetoothDevice::new(
-            BluetoothDeviceEmpty::new(device.clone()))
-    }
-
-    pub fn get_object_path(&self) -> String {
-        self.get_device().get_object_path()
+    pub fn create_device(adapter: BluetoothAdapter, device: String) -> BluetoothDevice {
+        BluetoothDevice{
+            adapter: RefCell::new(adapter),
+            device: Arc::new(BluetoothDeviceEmpty::new(device.clone())),
+        }
     }
 
     #[cfg(all(target_os = "linux", feature = "bluetooth"))]
-    fn get_device(&self) -> BluetoothDeviceBluez {
+    fn get_device(&self) -> Arc<BluetoothDeviceBluez> {
         self.device.clone()
     }
 
     #[cfg(not(any(target_os = "linux")))]
-    fn get_device(&self) -> &BluetoothDeviceEmpty {
-        &self.device
+    fn get_device(&self) -> Arc<BluetoothDeviceEmpty> {
+        self.device.clone()
+    }
+
+    pub fn get_id(&self) -> String {
+        self.get_device().get_id()
+    }
+
+    pub fn get_adapter(&self) -> BluetoothAdapter {
+        self.adapter.borrow_mut().clone()
     }
 
     pub fn get_address(&self) -> Result<String, Box<Error>> {
@@ -347,10 +334,6 @@ impl BluetoothDevice {
         self.get_device().set_alias(value)
     }
 
-    pub fn get_adapter(&self) -> Result<String, Box<Error>> {
-        self.get_device().get_adapter()
-    }
-
     pub fn is_legacy_pairing(&self) -> Result<bool, Box<Error>> {
         self.get_device().is_legacy_pairing()
     }
@@ -385,7 +368,7 @@ impl BluetoothDevice {
 
     pub fn get_gatt_services(&self) -> Result<Vec<BluetoothGATTService>, Box<Error>> {
         let services = try!(self.get_device().get_gatt_services());
-        Ok(services.into_iter().map(|service| BluetoothGATTService::create_service(service)).collect())
+        Ok(services.into_iter().map(|service| BluetoothGATTService::create_service(self.clone(), service)).collect())
     }
 
     pub fn connect(&self) -> Result<(), Box<Error>> {
@@ -415,45 +398,37 @@ impl BluetoothDevice {
 
 impl BluetoothGATTService {
     #[cfg(all(target_os = "linux", feature = "bluetooth"))]
-    fn new(gatt_service: BluetoothGATTServiceBluez)
-           -> BluetoothGATTService {
-        BluetoothGATTService {
-            gatt_service: gatt_service
-        }
-    }
-
-    #[cfg(all(target_os = "linux", feature = "bluetooth"))]
-    pub fn create_service(service: String) -> BluetoothGATTService {
-        BluetoothGATTService::new(
-            BluetoothGATTServiceBluez::new(service.clone()))
-    }
-
-    #[cfg(not(any(target_os = "linux")))]
-    fn new(gatt_service: BluetoothGATTServiceEmpty)
-           -> BluetoothGATTService {
-        BluetoothGATTService {
-            gatt_service: gatt_service
+    pub fn create_service(device: BluetoothDevice, service: String) -> BluetoothGATTService {
+        BluetoothGATTService{
+            device: RefCell::new(device),
+            gatt_service: Arc::new(BluetoothGATTServiceBluez::new(service.clone())),
         }
     }
 
     #[cfg(not(any(target_os = "linux")))]
-    pub fn create_service(service: String) -> BluetoothGATTService {
-        BluetoothGATTService::new(
-            BluetoothGATTServiceEmpty::new(service.clone()))
-    }
-
-    pub fn get_object_path(&self) -> String {
-        self.get_gatt_service().get_object_path()
+    pub fn create_service(device: BluetoothDevice, service: String) -> BluetoothGATTService {
+        BluetoothGATTService{
+            device: RefCell::new(device),
+            gatt_service: Arc::new(BluetoothGATTServiceEmpty::new(service.clone())),
+        }
     }
 
     #[cfg(all(target_os = "linux", feature = "bluetooth"))]
-    fn get_gatt_service(&self) -> BluetoothGATTServiceBluez {
+    fn get_gatt_service(&self) -> Arc<BluetoothGATTServiceBluez> {
         self.gatt_service.clone()
     }
 
     #[cfg(not(any(target_os = "linux")))]
-    fn get_gatt_service(&self) -> &BluetoothGATTServiceEmpty {
-        &self.gatt_service
+    fn get_gatt_service(&self) -> Arc<BluetoothGATTServiceEmpty> {
+        self.gatt_service.clone()
+    }
+
+    pub fn get_id(&self) -> String {
+        self.get_gatt_service().get_id()
+    }
+
+    pub fn get_device(&self) -> BluetoothDevice {
+        self.device.borrow_mut().clone()
     }
 
     pub fn get_uuid(&self) -> Result<String, Box<Error>> {
@@ -464,70 +439,54 @@ impl BluetoothGATTService {
         self.get_gatt_service().is_primary()
     }
 
-    pub fn get_device(&self) -> Result<String, Box<Error>> {
-        self.get_gatt_service().get_device()
-    }
-
     pub fn get_includes(&self) -> Result<Vec<BluetoothGATTService>, Box<Error>> {
         let services = try!(self.get_gatt_service().get_includes());
-        Ok(services.into_iter().map(|service| BluetoothGATTService::create_service(service)).collect())
+        Ok(services.into_iter().map(|service| BluetoothGATTService::create_service(self.get_device(), service)).collect())
     }
 
     pub fn get_gatt_characteristics(&self) -> Result<Vec<BluetoothGATTCharacteristic>, Box<Error>> {
         let characteristics = try!(self.get_gatt_service().get_gatt_characteristics());
-        Ok(characteristics.into_iter().map(|characteristic| BluetoothGATTCharacteristic::create_characteristic(characteristic)).collect())
+        Ok(characteristics.into_iter().map(|characteristic| BluetoothGATTCharacteristic::create_characteristic(self.clone(), characteristic)).collect())
     }
 }
 
 impl BluetoothGATTCharacteristic {
     #[cfg(all(target_os = "linux", feature = "bluetooth"))]
-    fn new(gatt_characteristic: BluetoothGATTCharacteristicBluez)
-           -> BluetoothGATTCharacteristic {
-        BluetoothGATTCharacteristic {
-            gatt_characteristic: gatt_characteristic
-        }
-    }
-
-    #[cfg(all(target_os = "linux", feature = "bluetooth"))]
-    pub fn create_characteristic(characteristic: String) -> BluetoothGATTCharacteristic {
-        BluetoothGATTCharacteristic::new(
-            BluetoothGATTCharacteristicBluez::new(characteristic.clone()))
-    }
-
-    #[cfg(not(any(target_os = "linux")))]
-    fn new(gatt_characteristic: BluetoothGATTCharacteristicEmpty)
-           -> BluetoothGATTCharacteristic {
-        BluetoothGATTCharacteristic {
-            gatt_characteristic: gatt_characteristic
+    pub fn create_characteristic(service: BluetoothGATTService, characteristic: String) -> BluetoothGATTCharacteristic {
+        BluetoothGATTCharacteristic{
+            service: RefCell::new(service),
+            gatt_characteristic: Arc::new(BluetoothGATTCharacteristicBluez::new(characteristic.clone()))
         }
     }
 
     #[cfg(not(any(target_os = "linux")))]
-    pub fn create_characteristic(characteristic: String) -> BluetoothGATTCharacteristic {
-        BluetoothGATTCharacteristic::new(
-            BluetoothGATTCharacteristicEmpty::new(characteristic.clone()))
-    }
-
-    pub fn get_object_path(&self) -> String {
-        self.get_gatt_characteristic().get_object_path()
+    pub fn create_characteristic(service: BluetoothGATTService, characteristic: String) -> BluetoothGATTCharacteristic {
+        BluetoothGATTCharacteristic{
+            service: RefCell::new(service),
+            gatt_characteristic: Arc::new(BluetoothGATTCharacteristicEmpty::new(characteristic.clone()))
+        }
     }
 
     #[cfg(all(target_os = "linux", feature = "bluetooth"))]
-    fn get_gatt_characteristic(&self) -> BluetoothGATTCharacteristicBluez {
+    fn get_gatt_characteristic(&self) -> Arc<BluetoothGATTCharacteristicBluez> {
         self.gatt_characteristic.clone()
     }
 
     #[cfg(not(any(target_os = "linux")))]
-    fn get_gatt_characteristic(&self) -> &BluetoothGATTCharacteristicEmpty {
-        &self.gatt_characteristic
+    fn get_gatt_characteristic(&self) -> Arc<BluetoothGATTCharacteristicEmpty> {
+        self.gatt_characteristic.clone()
+    }
+
+    pub fn get_id(&self) -> String {
+        self.get_gatt_characteristic().get_id()
+    }
+
+    pub fn get_service(&self) -> BluetoothGATTService {
+        self.service.borrow_mut().clone()
     }
 
     pub fn get_uuid(&self) -> Result<String, Box<Error>> {
         self.get_gatt_characteristic().get_uuid()
-    }
-
-    pub fn get_service(&self) -> Result<String, Box<Error>> {
-        self.get_gatt_characteristic().get_service()
     }
 
     pub fn get_value(&self) -> Result<Vec<u8>, Box<Error>> {
@@ -544,7 +503,7 @@ impl BluetoothGATTCharacteristic {
 
     pub fn get_gatt_descriptors(&self) -> Result<Vec<BluetoothGATTDescriptor>, Box<Error>> {
         let descriptors =  try!(self.get_gatt_characteristic().get_gatt_descriptors());
-        Ok(descriptors.into_iter().map(|descriptor| BluetoothGATTDescriptor::create_descriptor(descriptor)).collect())
+        Ok(descriptors.into_iter().map(|descriptor| BluetoothGATTDescriptor::create_descriptor(self.clone(), descriptor)).collect())
     }
 
     pub fn read_value(&self) -> Result<Vec<u8>, Box<Error>> {
@@ -566,53 +525,41 @@ impl BluetoothGATTCharacteristic {
 
 impl BluetoothGATTDescriptor {
     #[cfg(all(target_os = "linux", feature = "bluetooth"))]
-    fn new(gatt_descriptor: BluetoothGATTDescriptorBluez)
-           -> BluetoothGATTDescriptor {
-        BluetoothGATTDescriptor {
-            gatt_descriptor: gatt_descriptor
-        }
-    }
-
-    #[cfg(all(target_os = "linux", feature = "bluetooth"))]
-    pub fn create_descriptor(descriptor: String) -> BluetoothGATTDescriptor {
-        BluetoothGATTDescriptor::new(
-            BluetoothGATTDescriptorBluez::new(descriptor.clone()))
-    }
-
-    #[cfg(not(any(target_os = "linux")))]
-    fn new(gatt_descriptor: BluetoothGATTDescriptorEmpty)
-           -> BluetoothGATTDescriptor {
-        BluetoothGATTDescriptor {
-            gatt_descriptor: gatt_descriptor
+    pub fn create_descriptor(characteristic: BluetoothGATTCharacteristic, descriptor: String) -> BluetoothGATTDescriptor {
+        BluetoothGATTDescriptor{
+            characteristic: RefCell::new(characteristic),
+            gatt_descriptor: Arc::new(BluetoothGATTDescriptorBluez::new(descriptor.clone()))
         }
     }
 
     #[cfg(not(any(target_os = "linux")))]
-    pub fn create_descriptor(descriptor: String) -> BluetoothGATTDescriptor {
-        BluetoothGATTDescriptor::new(
-            BluetoothGATTDescriptorEmpty::new(descriptor.clone()))
-    }
-
-    pub fn get_object_path(&self) -> String {
-        self.get_gatt_descriptor().get_object_path()
+    pub fn create_descriptor(characteristic: BluetoothGATTCharacteristic, descriptor: String) -> BluetoothGATTDescriptor {
+        BluetoothGATTDescriptor{
+            characteristic: RefCell::new(characteristic),
+            gatt_descriptor: Arc::new(BluetoothGATTDescriptorEmpty::new(descriptor.clone()))
+        }
     }
 
     #[cfg(all(target_os = "linux", feature = "bluetooth"))]
-    fn get_gatt_descriptor(&self) -> BluetoothGATTDescriptorBluez {
+    fn get_gatt_descriptor(&self) -> Arc<BluetoothGATTDescriptorBluez> {
         self.gatt_descriptor.clone()
     }
 
     #[cfg(not(any(target_os = "linux")))]
-    fn get_gatt_descriptor(&self) -> &BluetoothGATTDescriptorEmpty {
-        &self.gatt_descriptor
+    fn get_gatt_descriptor(&self) -> Arc<BluetoothGATTDescriptorEmpty> {
+        self.gatt_descriptor.clone()
+    }
+
+    pub fn get_id(&self) -> String {
+        self.get_gatt_descriptor().get_id()
+    }
+
+    pub fn get_characteristic(&self) -> BluetoothGATTCharacteristic {
+        self.characteristic.borrow_mut().clone()
     }
 
     pub fn get_uuid(&self) -> Result<String, Box<Error>> {
         self.get_gatt_descriptor().get_uuid()
-    }
-
-    pub fn get_characteristic(&self) -> Result<String, Box<Error>> {
-        self.get_gatt_descriptor().get_characteristic()
     }
 
     pub fn get_value(&self) -> Result<Vec<u8>, Box<Error>> {

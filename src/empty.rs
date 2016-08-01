@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 use std::error::Error;
+use std::sync::Arc;
 
 const NOT_SUPPORTED_ERROR: &'static str = "Error! Not supported platform!";
 
@@ -18,7 +19,7 @@ impl BluetoothAdapter {
         BluetoothAdapter{ }
     }
 
-    pub fn get_object_path(&self) -> String {
+    pub fn get_id(&self) -> String {
         String::new()
     }
 
@@ -119,7 +120,7 @@ impl BluetoothAdapter {
 pub struct BluetoothDiscoverySession { }
 
 impl BluetoothDiscoverySession {
-    pub fn create_session(_adapter: &BluetoothAdapter) -> Result<BluetoothDiscoverySession, Box<Error>> {
+    pub fn create_session(_adapter: Arc<BluetoothAdapter>) -> Result<BluetoothDiscoverySession, Box<Error>> {
         Ok(BluetoothDiscoverySession{ })
     }
 
@@ -140,7 +141,7 @@ impl BluetoothDevice {
         BluetoothDevice { }
     }
 
-    pub fn get_object_path(&self) -> String {
+    pub fn get_id(&self) -> String {
         String::new()
     }
 
@@ -189,10 +190,6 @@ impl BluetoothDevice {
     }
 
     pub fn set_alias(&self, _value: String) -> Result<(), Box<Error>> {
-        Err(Box::from(NOT_SUPPORTED_ERROR))
-    }
-
-    pub fn get_adapter(&self) -> Result<String, Box<Error>> {
         Err(Box::from(NOT_SUPPORTED_ERROR))
     }
 
@@ -265,7 +262,7 @@ impl BluetoothGATTService {
         BluetoothGATTService { }
     }
 
-    pub fn get_object_path(&self) -> String {
+    pub fn get_id(&self) -> String {
         String::new()
     }
 
@@ -274,10 +271,6 @@ impl BluetoothGATTService {
     }
 
     pub fn is_primary(&self) -> Result<bool, Box<Error>> {
-        Err(Box::from(NOT_SUPPORTED_ERROR))
-    }
-
-    pub fn get_device(&self) -> Result<String, Box<Error>> {
         Err(Box::from(NOT_SUPPORTED_ERROR))
     }
 
@@ -298,15 +291,11 @@ impl BluetoothGATTCharacteristic {
         BluetoothGATTCharacteristic { }
     }
 
-    pub fn get_object_path(&self) -> String {
+    pub fn get_id(&self) -> String {
         String::new()
     }
 
     pub fn get_uuid(&self) -> Result<String, Box<Error>> {
-        Err(Box::from(NOT_SUPPORTED_ERROR))
-    }
-
-    pub fn get_service(&self) -> Result<String, Box<Error>> {
         Err(Box::from(NOT_SUPPORTED_ERROR))
     }
 
@@ -351,15 +340,11 @@ impl BluetoothGATTDescriptor {
         BluetoothGATTDescriptor { }
     }
 
-    pub fn get_object_path(&self) -> String {
+    pub fn get_id(&self) -> String {
         String::new()
     }
 
     pub fn get_uuid(&self) -> Result<String, Box<Error>> {
-        Err(Box::from(NOT_SUPPORTED_ERROR))
-    }
-
-    pub fn get_characteristic(&self) -> Result<String, Box<Error>> {
         Err(Box::from(NOT_SUPPORTED_ERROR))
     }
 

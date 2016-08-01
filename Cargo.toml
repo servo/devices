@@ -8,4 +8,4 @@ default = ["bluetooth"]
 bluetooth = ["blurz"]
 
 [target.'cfg(target_os = "linux")'.dependencies]
-blurz = { version = "0.1.7", optional = true }
+blurz = { version = "0.2.0", optional = true }
