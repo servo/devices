@@ -7,7 +7,7 @@
 
 use std::error::Error;
 use std::ffi::{CStr, CString};
-use std::sync::atomic::{AtomicU64, Ordering, ATOMIC_U64_INIT};
+use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
 use std::time;
 use std::thread;
 
@@ -78,10 +78,10 @@ pub mod wait {
 
     pub type Timestamp = u64;
 
-    static TIMESTAMP: AtomicU64 = ATOMIC_U64_INIT;
+    static TIMESTAMP: AtomicUsize = ATOMIC_USIZE_INIT;
 
     pub fn get_timestamp() -> Timestamp {
-        TIMESTAMP.fetch_add(1, Ordering::SeqCst)
+        TIMESTAMP.fetch_add(1, Ordering::SeqCst) as u64
     }
 
     pub fn now() -> *mut Object {
