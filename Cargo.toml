@@ -1,7 +1,7 @@
 [package]
 name = "blurmac"
 description = "Bluetooth Rust lib using macOS CoreBluetooth"
-version = "0.0.1"
+version = "0.0.2"
 readme = "README.md"
 keywords = ["bluetooth", "ble", "macOS", "CoreBluetooth"]
 repository = "https://github.com/akosthekiss/blurmac"
@@ -14,5 +14,5 @@ path = "src/lib.rs"
 crate-type = ["rlib"]
 
 [dependencies]
-log = "0.3"
+log = "0.4"
 objc = "0.2"
