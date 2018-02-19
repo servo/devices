@@ -15,7 +15,7 @@ blurz = { version = "0.2.1", optional = true }
 blurdroid = { version = "0.1.2", optional = true }
 
 [target.'cfg(target_os = "macos")'.dependencies]
-blurmac = { version = "0.0.1", optional = true }
+blurmac = { path = "blurmac", optional = true }
 
 [dependencies]
 blurmock = { version = "0.1.2", optional = true }
