@@ -9,7 +9,7 @@ bluetooth = ["blurz", "blurdroid", "blurmac"]
 bluetooth-test = ["blurmock"]
 
 [target.'cfg(target_os = "linux")'.dependencies]
-blurz = { version = "0.2.1", optional = true }
+blurz = { version = "0.3", optional = true }
 
 [target.'cfg(target_os = "android")'.dependencies]
 blurdroid = { version = "0.1.2", optional = true }

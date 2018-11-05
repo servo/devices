@@ -203,10 +203,44 @@ macro_rules! get_inner_and_call(
         }
     };
 
+    (@with_bluez_offset, $enum_value: expr, $enum_type: ident, $function_name: ident) => {
+        match $enum_value {
+            #[cfg(all(target_os = "linux", feature = "bluetooth"))]
+            &$enum_type::Bluez(ref bluez) => bluez.$function_name(None),
+            #[cfg(all(target_os = "android", feature = "bluetooth"))]
+            &$enum_type::Android(ref android) => android.$function_name(),
+            #[cfg(all(target_os = "macos", feature = "bluetooth"))]
+            &$enum_type::Mac(ref mac) => mac.$function_name(),
+            #[cfg(not(any(all(target_os = "linux", feature = "bluetooth"),
+                          all(target_os = "android", feature = "bluetooth"),
+                          all(target_os = "macos", feature = "bluetooth"))))]
+            &$enum_type::Empty(ref empty) => empty.$function_name(),
+            #[cfg(feature = "bluetooth-test")]
+            &$enum_type::Mock(ref fake) => fake.$function_name(),
+        }
+    };
+
     ($enum_value: expr, $enum_type: ident, $function_name: ident, $value: expr) => {
         match $enum_value {
             #[cfg(all(target_os = "linux", feature = "bluetooth"))]
             &$enum_type::Bluez(ref bluez) => bluez.$function_name($value),
+            #[cfg(all(target_os = "android", feature = "bluetooth"))]
+            &$enum_type::Android(ref android) => android.$function_name($value),
+            #[cfg(all(target_os = "macos", feature = "bluetooth"))]
+            &$enum_type::Mac(ref mac) => mac.$function_name($value),
+            #[cfg(not(any(all(target_os = "linux", feature = "bluetooth"),
+                          all(target_os = "android", feature = "bluetooth"),
+                          all(target_os = "macos", feature = "bluetooth"))))]
+            &$enum_type::Empty(ref empty) => empty.$function_name($value),
+            #[cfg(feature = "bluetooth-test")]
+            &$enum_type::Mock(ref fake) => fake.$function_name($value),
+        }
+    };
+
+    (@with_bluez_offset, $enum_value: expr, $enum_type: ident, $function_name: ident, $value: expr) => {
+        match $enum_value {
+            #[cfg(all(target_os = "linux", feature = "bluetooth"))]
+            &$enum_type::Bluez(ref bluez) => bluez.$function_name($value, None),
             #[cfg(all(target_os = "android", feature = "bluetooth"))]
             &$enum_type::Android(ref android) => android.$function_name($value),
             #[cfg(all(target_os = "macos", feature = "bluetooth"))]
@@ -948,11 +982,11 @@ impl BluetoothGATTCharacteristic {
     }
 
     pub fn read_value(&self) -> Result<Vec<u8>, Box<Error>> {
-        get_inner_and_call!(self, BluetoothGATTCharacteristic, read_value)
+        get_inner_and_call!(@with_bluez_offset, self, BluetoothGATTCharacteristic, read_value)
     }
 
     pub fn write_value(&self, values: Vec<u8>) -> Result<(), Box<Error>> {
-        get_inner_and_call!(self, BluetoothGATTCharacteristic, write_value, values)
+        get_inner_and_call!(@with_bluez_offset, self, BluetoothGATTCharacteristic, write_value, values)
     }
 
     pub fn start_notify(&self) -> Result<(), Box<Error>> {
@@ -1048,10 +1082,10 @@ impl BluetoothGATTDescriptor {
     }
 
     pub fn read_value(&self) -> Result<Vec<u8>, Box<Error>> {
-        get_inner_and_call!(self, BluetoothGATTDescriptor, read_value)
+        get_inner_and_call!(@with_bluez_offset, self, BluetoothGATTDescriptor, read_value)
     }
 
     pub fn write_value(&self, values: Vec<u8>) -> Result<(), Box<Error>> {
-        get_inner_and_call!(self, BluetoothGATTDescriptor, write_value, values)
+        get_inner_and_call!(@with_bluez_offset, self, BluetoothGATTDescriptor, write_value, values)
     }
 }
