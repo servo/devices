@@ -16,6 +16,3 @@ addons:
 script:
   - cargo build --features bluetooth-test
   - cargo test
-
-notifications:
-  webhooks: http://build.servo.org:54856/travis
