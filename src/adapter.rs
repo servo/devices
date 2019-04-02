@@ -45,8 +45,6 @@ pub trait BluetoothAdapter {
     fn get_device_id(&self) -> Result<u32, Box<Error>>;
     fn get_modalias(&self) -> Result<(String, u32, u32, u32), Box<Error>>;  
 }
-
-#[derive(Clone, Debug)]
 pub struct Bluez(Arc<BluetoothAdapterBluez>);
 
 impl BluetoothAdapter for Bluez{
@@ -274,15 +272,6 @@ impl BluetoothAdapter for Mac{
     }
 
     fn get_device(&self, address: String) -> Result<Option<BluetoothDevice>, Box<Error>> {
-        let devices = try!(self.get_devices());
-        for device in devices {
-            if try!(device.get_address()) == address {
-                return Ok(Some(device));
-            }
-        }
-        Ok(None)
-    }
-
     fn get_address(&self) -> Result<String, Box<Error>> {
         self.0.get_address()
     }
@@ -461,3 +450,5 @@ impl BluetoothAdapter for Empty{
         self.0.get_modalias()
     }    
 }
+
+
