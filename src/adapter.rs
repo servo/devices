@@ -270,8 +270,15 @@ impl BluetoothAdapter for Mac{
         let device_list = try!(self.0.get_device_list());
         Ok(device_list.into_iter().map(|device| BluetoothDevice::create_device(self.clone(), device)).collect())
     }
-
     fn get_device(&self, address: String) -> Result<Option<BluetoothDevice>, Box<Error>> {
+        let devices = try!(self.get_devices());
+        for device in devices {
+            if try!(device.get_address()) == address {
+                return Ok(Some(device));
+            }
+        }
+        Ok(None)
+    }
     fn get_address(&self) -> Result<String, Box<Error>> {
         self.0.get_address()
     }
