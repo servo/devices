@@ -45,12 +45,14 @@ pub trait BluetoothAdapter {
     fn get_device_id(&self) -> Result<u32, Box<Error>>;
     fn get_modalias(&self) -> Result<(String, u32, u32, u32), Box<Error>>;  
 }
+
+#[derive(Clone, Debug)]
 pub struct Bluez(Arc<BluetoothAdapterBluez>);
 
 impl BluetoothAdapter for Bluez{
 
     fn new() -> Result<Box<BluetoothAdapter>, Box<Error>> {
-        let bluez_adapter = try!(BluetoothAdapter::new());
+        let bluez_adapter = try!(BluetoothAdapter::init());
         Ok(BluetoothAdapter::Bluez(Arc::new(bluez_adapter)))
     }
 
@@ -258,7 +260,7 @@ pub struct Mac(Arc<BluetoothAdapterMac>);
 impl BluetoothAdapter for Mac{
 
     fn new() -> Result<Box<BluetoothAdapter>, Box<Error>> {
-        let mac_adapter = try!(BluetoothAdapter::new());
+        let mac_adapter = try!(BluetoothAdapter::init());
         Ok(BluetoothAdapter::Mac(Arc::new(mac_adapter)))
     }
 
@@ -270,6 +272,7 @@ impl BluetoothAdapter for Mac{
         let device_list = try!(self.0.get_device_list());
         Ok(device_list.into_iter().map(|device| BluetoothDevice::create_device(self.clone(), device)).collect())
     }
+
     fn get_device(&self, address: String) -> Result<Option<BluetoothDevice>, Box<Error>> {
         let devices = try!(self.get_devices());
         for device in devices {
@@ -279,6 +282,7 @@ impl BluetoothAdapter for Mac{
         }
         Ok(None)
     }
+
     fn get_address(&self) -> Result<String, Box<Error>> {
         self.0.get_address()
     }
@@ -358,8 +362,8 @@ impl BluetoothAdapter for Mac{
 pub struct Empty(Arc<BluetoothAdapterEmpty>);
 
 impl BluetoothAdapter for Empty{
-    fn new(&self) -> Result<Box<BluetoothAdapter>, Box<Error>> {
-        let adapter = try!(BluetoothAdapter::init());
+    fn new() -> Result<Box<BluetoothAdapter>, Box<Error>> {
+        let adapter = try!(BluetoothAdapterEmpty::init());
         Ok(BluetoothAdapter::Empty(Arc::new(adapter)))
     }
 
@@ -457,5 +461,3 @@ impl BluetoothAdapter for Empty{
         self.0.get_modalias()
     }    
 }
-
-
