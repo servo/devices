@@ -9,15 +9,15 @@ use std::sync::Arc;
 const NOT_SUPPORTED_ERROR: &'static str = "Error! Not supported platform!";
 
 #[derive(Clone, Debug)]
-pub struct BluetoothAdapter { }
+pub struct EmptyAdapter { }
 
-impl BluetoothAdapter {
-    pub fn init() -> Result<BluetoothAdapter, Box<Error>> {
-        Ok(BluetoothAdapter::new())
+impl EmptyAdapter {
+    pub fn init() -> Result<EmptyAdapter, Box<Error>> {
+        Ok(EmptyAdapter::new())
     }
 
-    fn new() -> BluetoothAdapter {
-        BluetoothAdapter{ }
+    fn new() -> EmptyAdapter {
+        EmptyAdapter{ }
     }
 
     pub fn get_id(&self) -> String {
@@ -121,7 +121,7 @@ impl BluetoothAdapter {
 pub struct BluetoothDiscoverySession { }
 
 impl BluetoothDiscoverySession {
-    pub fn create_session(_adapter: Arc<BluetoothAdapter>) -> Result<BluetoothDiscoverySession, Box<Error>> {
+    pub fn create_session(_adapter: Arc<EmptyAdapter>) -> Result<BluetoothDiscoverySession, Box<Error>> {
         Ok(BluetoothDiscoverySession{ })
     }
 
