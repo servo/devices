@@ -76,19 +76,19 @@ impl BluetoothAdapter{
     #[cfg(all(target_os = "linux", feature = "bluetooth"))]
     pub fn new() -> Result<Box<BluetoothAdapterBluez>, Box<Error>> {
         let bluez_adapter = try!(BluetoothAdapterBluez::init());
-        Ok(BluetoothAdapter::Bluez(Arc::new(bluez_adapter)))
+        Ok(Box::new(bluez_adapter))
     }
 
     #[cfg(all(target_os = "android", feature = "bluetooth"))]
     pub fn new() -> Result<Box<BluetoothAdapterAndroid>, Box<Error>> {
         let blurdroid_adapter = try!(BluetoothAdapterAndroid::get_adapter());
-        Ok(BluetoothAdapter::Android(Arc::new(blurdroid_adapter)))
+        Ok(Box::new(blurdroid_adapter))
     }
 
     #[cfg(all(target_os = "macos", feature = "bluetooth"))]
     pub fn new() -> Result<Box<BluetoothAdapterMac>, Box<Error>> {
         let mac_adapter = try!(BluetoothAdapterMac::init());
-        Ok(BluetoothAdapter::Mac(Arc::new(mac_adapter)))
+        Ok(Box::new(mac_adapter))
     }
 
     #[cfg(not(any(all(target_os = "linux", feature = "bluetooth"),
@@ -220,6 +220,7 @@ impl BluetoothAdapter for Android{
 
     fn get_devices(&self) -> Result<Vec<BluetoothDevice>, Box<Error>>{
         let device_list = try!(self.0.get_device_list());
+        let android_adapter = try!(BluetoothAdapterAndroid::init());
         Ok(device_list.into_iter().map(|device|  BluetoothDevice::Android(Arc::new(BluetoothDeviceAndroid::new(android_adapter, device)))).collect())
     }
 
@@ -280,7 +281,7 @@ impl BluetoothAdapter for Android{
 
 
     fn create_discovery_session(&self) -> Result<BluetoothDiscoverySession, Box<Error>> {
-         let android_adapter = try!(BluetoothAdapterAndroid::init());
+        let android_adapter = try!(BluetoothAdapterAndroid::init());
         let blurdroid_session = try!(BluetoothDiscoverySessionAndroid::create_session(Arc::new(android_adapter)));
         Ok(BluetoothDiscoverySession::Android(Arc::new(blurdroid_session)))
     }
@@ -323,6 +324,7 @@ impl BluetoothAdapter for Mac{
 
     fn get_devices(&self) -> Result<Vec<BluetoothDevice>, Box<Error>>{
         let device_list = try!(self.0.get_device_list());
+        let mac_adapter = try!(BluetoothAdapterMac::init());
         Ok(device_list.into_iter().map(|device| BluetoothDevice::Mac(Arc::new(BluetoothDeviceMac::new(mac_adapter, device)))).collect())
     }
 
@@ -382,7 +384,7 @@ impl BluetoothAdapter for Mac{
     }
 
 
-    fn create_discovery_session(&self) -> Result<BluetoothDiscoveySession, Box<Error>> {
+    fn create_discovery_session(&self) -> Result<BluetoothDiscoverySession, Box<Error>> {
         let mac_adapter = try!(BluetoothAdapterMac::init());
         let mac_session = try!(BluetoothDiscoverySessionMac::create_session(Arc::new(mac_adapter)));
         Ok(BluetoothDiscoverySession::Mac(Arc::new(mac_session)))
