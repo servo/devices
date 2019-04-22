@@ -83,12 +83,12 @@ use blurmock::fake_discovery_session::FakeBluetoothDiscoverySession;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::error::Error;
-use adapter::BluetoothAdapter;
 
 #[cfg(feature = "bluetooth-test")]
 const NOT_SUPPORTED_ON_REAL_ERROR: &'static str = "Error! Test functions are not supported on real devices!";
 #[cfg(feature = "bluetooth-test")]
 const NOT_SUPPORTED_ON_MOCK_ERROR: &'static str = "Error! The first parameter must be a mock structure!";
+
 
 #[derive(Debug)]
 pub enum BluetoothDiscoverySession {
@@ -257,38 +257,9 @@ macro_rules! get_inner_and_call_test_func {
     };
 }
 
+
+
 impl BluetoothDiscoverySession {
-    fn create_session(adapter : BluetoothAdapter) -> Result<BluetoothDiscoverySession, Box<Error>> {
-        match adapter {
-            #[cfg(all(target_os = "linux", feature = "bluetooth"))]
-            BluetoothAdapter::Bluez(bluez_adapter) => {
-                let bluez_session = try!(BluetoothDiscoverySessionBluez::create_session(bluez_adapter.get_id()));
-                Ok(BluetoothDiscoverySession::Bluez(Arc::new(bluez_session)))
-            },
-            #[cfg(all(target_os = "android", feature = "bluetooth"))]
-            BluetoothAdapter::Android(android_adapter) => {
-                let blurdroid_session = try!(BluetoothDiscoverySessionAndroid::create_session(android_adapter));
-                Ok(BluetoothDiscoverySession::Android(Arc::new(blurdroid_session)))
-            },
-            #[cfg(all(target_os = "macos", feature = "bluetooth"))]
-            BluetoothAdapter::Mac(mac_adapter) => {
-                let mac_session = try!(BluetoothDiscoverySessionMac::create_session(mac_adapter));
-                Ok(BluetoothDiscoverySession::Mac(Arc::new(mac_session)))
-            },
-            #[cfg(not(any(all(target_os = "linux", feature = "bluetooth"),
-                          all(target_os = "android", feature = "bluetooth"),
-                          all(target_os = "macos", feature = "bluetooth"))))]
-            BluetoothAdapter::Empty(adapter) => {
-                let empty_session = try!(BluetoothDiscoverySessionEmpty::create_session(adapter));
-                Ok(BluetoothDiscoverySession::Empty(Arc::new(empty_session)))
-            },
-            #[cfg(feature = "bluetooth-test")]
-            BluetoothAdapter::Mock(fake_adapter) => {
-                let test_session = try!(FakeBluetoothDiscoverySession::create_session(fake_adapter));
-                Ok(BluetoothDiscoverySession::Mock(Arc::new(test_session)))
-            },
-        }
-    }
 
     pub fn start_discovery(&self) -> Result<(), Box<Error>> {
         get_inner_and_call!(self, BluetoothDiscoverySession, start_discovery)
@@ -301,33 +272,6 @@ impl BluetoothDiscoverySession {
 
 impl BluetoothDevice {
 
-     fn create_device(adapter: BluetoothAdapter, device: String) -> BluetoothDevice {
-        match adapter {
-            #[cfg(all(target_os = "linux", feature = "bluetooth"))]
-            BluetoothAdapter::Bluez(_bluez_adapter) => {
-                BluetoothDevice::Bluez(Arc::new(BluetoothDeviceBluez::new(device)))
-            },
-            #[cfg(all(target_os = "android", feature = "bluetooth"))]
-            BluetoothAdapter::Android(android_adapter) => {
-                BluetoothDevice::Android(Arc::new(BluetoothDeviceAndroid::new(android_adapter, device)))
-            },
-            #[cfg(all(target_os = "macos", feature = "bluetooth"))]
-            BluetoothAdapter::Mac(mac_adapter) => {
-                BluetoothDevice::Mac(Arc::new(BluetoothDeviceMac::new(mac_adapter, device)))
-            },
-            #[cfg(not(any(all(target_os = "linux", feature = "bluetooth"),
-                          all(target_os = "android", feature = "bluetooth"),
-                          all(target_os = "macos", feature = "bluetooth"))))]
-            BluetoothAdapter::Empty(_adapter) => {
-                BluetoothDevice::Empty(Arc::new(BluetoothDeviceEmpty::new(device)))
-            },
-            #[cfg(feature = "bluetooth-test")]
-            BluetoothAdapter::Mock(fake_adapter) => {
-                BluetoothDevice::Mock(FakeBluetoothDevice::new_empty(fake_adapter, device))
-            },
-        }
-    }
-    
     #[cfg(feature = "bluetooth-test")]
     pub fn create_mock_device(adapter: BluetoothAdapter, device: String) -> Result<BluetoothDevice, Box<Error>> {
         match adapter {
