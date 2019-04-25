@@ -55,13 +55,8 @@ pub trait BluetoothAdapter {
    fn set_id(&self, id: String)-> Result<(), Box<Error>>{
         Err(Box::from(NOT_SUPPORTED_ERROR))
      }
-    fn get_devices(&self)-> Result<Vec<BluetoothDevice>, Box<Error>>{
-        Err(Box::from(NOT_SUPPORTED_ERROR))   
-    }
-    fn get_device(&self, address: String) -> Result<Option<BluetoothDevice>, Box<Error>>{
-        Err(Box::from(NOT_SUPPORTED_ERROR))   
-    }
-
+    fn get_devices(&self)-> Result<Vec<BluetoothDevice>, Box<Error>>;
+    fn get_device(&self, address: String) -> Result<Option<BluetoothDevice>, Box<Error>>;
     fn create_mock_device(&self, device: String) -> Result<BluetoothDevice, Box<Error>> {
          Err(Box::from(NOT_SUPPORTED_ERROR))   
     }
@@ -117,9 +112,7 @@ pub trait BluetoothAdapter {
     fn set_can_stop_discovery(&self, can_stop_discovery: bool) -> Result<(), Box<Error>>{
         Err(Box::from(NOT_SUPPORTED_ERROR))  
     }
-    fn create_discovery_session(&self)-> Result<BluetoothDiscoverySession, Box<Error>> {
-        Err(Box::from(NOT_SUPPORTED_ERROR))   
-    }
+    fn create_discovery_session(&self)-> Result<BluetoothDiscoverySession, Box<Error>>;
     fn get_uuids(&self)-> Result<Vec<String>, Box<Error>>;
     fn set_uuids(&self, uuids: Vec<String>) -> Result<(), Box<Error>>{
         Err(Box::from(NOT_SUPPORTED_ERROR))  
@@ -164,7 +157,7 @@ impl BluetoothAdapter{
                   all(target_os = "macos", feature = "bluetooth"))))]
     pub fn new() -> Result<Box<BluetoothAdapter>, Box<Error>> {
         let adapter = try!(BluetoothAdapterEmpty::init());
-        Ok(Box::new(adapter))
+        Ok(Box::new(Empty(Arc::new(adapter))))
     }
 
     #[cfg(feature = "bluetooth-test")]
@@ -752,3 +745,4 @@ impl BluetoothAdapter for Mock{
     }
 
 }
+
