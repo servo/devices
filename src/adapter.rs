@@ -137,19 +137,19 @@ impl BluetoothAdapter{
     #[cfg(all(target_os = "linux", feature = "bluetooth"))]
     pub fn new() -> Result<Box<BluetoothAdapter>, Box<Error>> {
         let bluez_adapter = try!(BluetoothAdapterBluez::init());
-        Ok(Box::new(bluez_adapter))
+        Ok(Box::new(Bluez(Arc::new(bluez_adapter))))
     }
 
     #[cfg(all(target_os = "android", feature = "bluetooth"))]
     pub fn new() -> Result<Box<BluetoothAdapter>, Box<Error>> {
         let blurdroid_adapter = try!(BluetoothAdapterAndroid::get_adapter());
-        Ok(Box::new(blurdroid_adapter))
+        Ok(Box::new(Android(Arc::new(blurdroid_adapter))))
     }
 
     #[cfg(all(target_os = "macos", feature = "bluetooth"))]
     pub fn new() -> Result<Box<BluetoothAdapter>, Box<Error>> {
         let mac_adapter = try!(BluetoothAdapterMac::init());
-        Ok(Box::new(mac_adapter))
+        Ok(Box::new(Mac(Arc::new(mac_adapter))))
     }
 
     #[cfg(not(any(all(target_os = "linux", feature = "bluetooth"),
