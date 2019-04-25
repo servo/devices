@@ -7,7 +7,7 @@ use blurmac::BluetoothAdapter as BluetoothAdapterMac;
 #[cfg(not(any(all(target_os = "linux", feature = "bluetooth"),
               all(target_os = "android", feature = "bluetooth"),
               all(target_os = "macos", feature = "bluetooth"))))]
-use empty::BluetoothAdapter as BluetoothAdapterEmpty;
+use empty::EmptyAdapter as BluetoothAdapterEmpty;
 #[cfg(feature = "bluetooth-test")]
 use blurmock::fake_adapter::FakeBluetoothAdapter;
 
@@ -55,8 +55,16 @@ pub trait BluetoothAdapter {
    fn set_id(&self, id: String)-> Result<(), Box<Error>>{
         Err(Box::from(NOT_SUPPORTED_ERROR))
      }
-    fn get_devices(&self)-> Result<Vec<BluetoothDevice>, Box<Error>>;
-    fn get_device(&self, address: String) -> Result<Option<BluetoothDevice>, Box<Error>>;
+    fn get_devices(&self)-> Result<Vec<BluetoothDevice>, Box<Error>>{
+        Err(Box::from(NOT_SUPPORTED_ERROR))   
+    }
+    fn get_device(&self, address: String) -> Result<Option<BluetoothDevice>, Box<Error>>{
+        Err(Box::from(NOT_SUPPORTED_ERROR))   
+    }
+
+    fn create_mock_device(&self, device: String) -> Result<BluetoothDevice, Box<Error>> {
+         Err(Box::from(NOT_SUPPORTED_ERROR))   
+    }
     fn get_address(&self) -> Result<String, Box<Error>>;
     fn set_address(&self, address: String) -> Result<(), Box<Error>>{
          Err(Box::from(NOT_SUPPORTED_ERROR))
@@ -109,7 +117,9 @@ pub trait BluetoothAdapter {
     fn set_can_stop_discovery(&self, can_stop_discovery: bool) -> Result<(), Box<Error>>{
         Err(Box::from(NOT_SUPPORTED_ERROR))  
     }
-    fn create_discovery_session(&self)-> Result<BluetoothDiscoverySession, Box<Error>> ;
+    fn create_discovery_session(&self)-> Result<BluetoothDiscoverySession, Box<Error>> {
+        Err(Box::from(NOT_SUPPORTED_ERROR))   
+    }
     fn get_uuids(&self)-> Result<Vec<String>, Box<Error>>;
     fn set_uuids(&self, uuids: Vec<String>) -> Result<(), Box<Error>>{
         Err(Box::from(NOT_SUPPORTED_ERROR))  
@@ -132,19 +142,19 @@ pub trait BluetoothAdapter {
 
 impl BluetoothAdapter{
     #[cfg(all(target_os = "linux", feature = "bluetooth"))]
-    pub fn new() -> Result<Box<BluetoothAdapterBluez>, Box<Error>> {
+    pub fn new() -> Result<Box<BluetoothAdapter>, Box<Error>> {
         let bluez_adapter = try!(BluetoothAdapterBluez::init());
         Ok(Box::new(bluez_adapter))
     }
 
     #[cfg(all(target_os = "android", feature = "bluetooth"))]
-    pub fn new() -> Result<Box<BluetoothAdapterAndroid>, Box<Error>> {
+    pub fn new() -> Result<Box<BluetoothAdapter>, Box<Error>> {
         let blurdroid_adapter = try!(BluetoothAdapterAndroid::get_adapter());
         Ok(Box::new(blurdroid_adapter))
     }
 
     #[cfg(all(target_os = "macos", feature = "bluetooth"))]
-    pub fn new() -> Result<Box<BluetoothAdapterMac>, Box<Error>> {
+    pub fn new() -> Result<Box<BluetoothAdapter>, Box<Error>> {
         let mac_adapter = try!(BluetoothAdapterMac::init());
         Ok(Box::new(mac_adapter))
     }
@@ -152,14 +162,15 @@ impl BluetoothAdapter{
     #[cfg(not(any(all(target_os = "linux", feature = "bluetooth"),
                   all(target_os = "android", feature = "bluetooth"),
                   all(target_os = "macos", feature = "bluetooth"))))]
-    pub fn new() -> Result<Box<BluetoothAdapterEmpty>, Box<Error>> {
+    pub fn new() -> Result<Box<BluetoothAdapter>, Box<Error>> {
         let adapter = try!(BluetoothAdapterEmpty::init());
         Ok(Box::new(adapter))
     }
 
     #[cfg(feature = "bluetooth-test")]
-    pub fn new_mock() -> Result<Box<FakeBluetoothAdapter>, Box<Error>> {
-        Ok(Box::new_empty())
+    pub fn new_mock() -> Result<Box<BluetoothAdapter>, Box<Error>> {
+        let fake_adapter = Mock(FakeBluetoothAdapter::new_empty());
+        Ok(Box::new(fake_adapter))
     }
 }   
 
@@ -273,8 +284,7 @@ impl BluetoothAdapter for Android{
   
     fn get_devices(&self) -> Result<Vec<BluetoothDevice>, Box<Error>>{
         let device_list = try!(self.0.get_device_list());
-        let android_adapter = try!(BluetoothAdapterAndroid::init());
-        Ok(device_list.into_iter().map(|device|  BluetoothDevice::Android(Arc::new(BluetoothDeviceAndroid::new(self, device)))).collect())
+        Ok(device_list.into_iter().map(|device|  BluetoothDevice::Android(Arc::new(BluetoothDeviceAndroid::new(self.0.clone(), device)))).collect())
     }
 
     fn get_device(&self, address: String) -> Result<Option<BluetoothDevice>, Box<Error>> {
@@ -327,7 +337,7 @@ impl BluetoothAdapter for Android{
     }
 
     fn create_discovery_session(&self) -> Result<BluetoothDiscoverySession, Box<Error>> {
-        let blurdroid_session = try!(BluetoothDiscoverySessionAndroid::create_session(self.0));
+        let blurdroid_session = try!(BluetoothDiscoverySessionAndroid::create_session(self.0.clone()));
         Ok(BluetoothDiscoverySession::Android(Arc::new(blurdroid_session)))
     }
 
@@ -369,7 +379,7 @@ impl BluetoothAdapter for Mac{
     }
     fn get_devices(&self) -> Result<Vec<BluetoothDevice>, Box<Error>>{
         let device_list = try!(self.0.get_device_list());
-        Ok(device_list.into_iter().map(|device| BluetoothDevice::Mac(Arc::new(BluetoothDeviceMac::new(self,device)))).collect())
+        Ok(device_list.into_iter().map(|device| BluetoothDevice::Mac(Arc::new(BluetoothDeviceMac::new(self.0.clone(),device)))).collect())
     }
     
 
@@ -563,6 +573,7 @@ impl BluetoothAdapter for Empty{
 
 }
 
+
 #[cfg(feature = "bluetooth-test")]
 struct Mock(Arc<FakeBluetoothAdapter>);
 
@@ -573,13 +584,13 @@ impl BluetoothAdapter for Mock{
         self.0.get_id()
     }
 
-    fn set_id(&self, id: String) {
-       self.0.set_id(id)
+    fn set_id(&self, id: String) -> Result<(), Box<Error>> {
+       Ok(self.0.set_id(id))
     }
 
     fn get_devices(&self) -> Result<Vec<BluetoothDevice>, Box<Error>> {
-        let device_list = try!(set.0.get_device_list());
-        Ok(device_list.into_iter().map(|device| BluetoothDevice::Mock(FakeBluetoothDevice::new_empty(self, device))).collect())
+        let device_list = try!(self.0.get_device_list());
+        Ok(device_list.into_iter().map(|device| BluetoothDevice::Mock(FakeBluetoothDevice::new_empty(self.0.clone(), device))).collect())
     }
 
     fn get_device(&self, address: String) -> Result<Option<BluetoothDevice>, Box<Error>> {
@@ -590,6 +601,11 @@ impl BluetoothAdapter for Mock{
             }
         }
         Ok(None)
+    }
+
+    fn create_mock_device(&self, device: String) -> Result<BluetoothDevice, Box<Error>> {
+        Ok(BluetoothDevice::Mock(FakeBluetoothDevice::new_empty(self.0.clone(), device)))
+        
     }
 
     fn get_address(&self) -> Result<String, Box<Error>> {
@@ -690,10 +706,9 @@ impl BluetoothAdapter for Mock{
     }
 
     fn create_discovery_session(&self) -> Result<BluetoothDiscoverySession, Box<Error>> {
-        //BluetoothDiscoverySession::create_session(self.clone())
-        //let test_session = FakeBluetoothDiscoverySession{};
-        let test_session = try!(FakeBluetoothDiscoverySession::create_session(self.0));
+        let test_session = try!(FakeBluetoothDiscoverySession::create_session(self.0.clone()));
         Ok(BluetoothDiscoverySession::Mock(Arc::new(test_session)))   
+
     }
 
     fn get_uuids(&self) -> Result<Vec<String>, Box<Error>> {
