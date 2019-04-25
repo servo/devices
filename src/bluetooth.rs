@@ -11,7 +11,7 @@ use blurmac::BluetoothAdapter as BluetoothAdapterMac;
 #[cfg(not(any(all(target_os = "linux", feature = "bluetooth"),
               all(target_os = "android", feature = "bluetooth"),
               all(target_os = "macos", feature = "bluetooth"))))]
-use empty::BluetoothAdapter as BluetoothAdapterEmpty;
+use empty::EmptyAdapter as BluetoothAdapterEmpty;
 #[cfg(feature = "bluetooth-test")]
 use blurmock::fake_adapter::FakeBluetoothAdapter;
 
@@ -271,18 +271,6 @@ impl BluetoothDiscoverySession {
 }
 
 impl BluetoothDevice {
-
-    #[cfg(feature = "bluetooth-test")]
-    pub fn create_mock_device(adapter: BluetoothAdapter, device: String) -> Result<BluetoothDevice, Box<Error>> {
-        match adapter {
-            BluetoothAdapter::Mock(fake_adapter) => {
-                Ok(BluetoothDevice::Mock(FakeBluetoothDevice::new_empty(fake_adapter, device)))
-            },
-            _ => {
-                Err(Box::from(NOT_SUPPORTED_ON_MOCK_ERROR))
-            },
-        }
-    }
 
     pub fn get_id(&self) -> String {
         get_inner_and_call!(self, BluetoothDevice, get_id)
@@ -797,3 +785,4 @@ impl BluetoothGATTDescriptor {
         get_inner_and_call!(@with_bluez_offset, self, BluetoothGATTDescriptor, write_value, values)
     }
 }
+
