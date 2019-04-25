@@ -6,117 +6,113 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::sync::Arc;
 
-use adapter::BluetoothAdapter;
-
 const NOT_SUPPORTED_ERROR: &'static str = "Error! Not supported platform!";
 
 #[derive(Clone, Debug)]
 pub struct EmptyAdapter { }
 
-impl EmptyAdapter{
+impl EmptyAdapter {
     pub fn init() -> Result<EmptyAdapter, Box<Error>> {
         Ok(EmptyAdapter::new())
     }
-     fn new() -> EmptyAdapter {
+
+    fn new() -> EmptyAdapter {
         EmptyAdapter{ }
     }
 
-     pub fn get_device_list(&self) -> Result<Vec<String>, Box<Error>> {
-        Err(Box::from(NOT_SUPPORTED_ERROR))
-    }
-}
-
-impl BluetoothAdapter for EmptyAdapter {
-
-    fn get_id(&self) -> String {
+    pub fn get_id(&self) -> String {
         String::new()
     }
 
-    fn get_address(&self) -> Result<String, Box<Error>> {
+    pub fn get_device_list(&self) -> Result<Vec<String>, Box<Error>> {
         Err(Box::from(NOT_SUPPORTED_ERROR))
     }
 
-    fn get_name(&self) -> Result<String, Box<Error>> {
+    pub fn get_address(&self) -> Result<String, Box<Error>> {
         Err(Box::from(NOT_SUPPORTED_ERROR))
     }
 
-    fn get_alias(&self) -> Result<String, Box<Error>> {
+    pub fn get_name(&self) -> Result<String, Box<Error>> {
         Err(Box::from(NOT_SUPPORTED_ERROR))
     }
 
-    fn set_alias(&self, _value: String) -> Result<(), Box<Error>> {
+    pub fn get_alias(&self) -> Result<String, Box<Error>> {
         Err(Box::from(NOT_SUPPORTED_ERROR))
     }
 
-    fn get_class(&self) -> Result<u32, Box<Error>> {
+    pub fn set_alias(&self, _value: String) -> Result<(), Box<Error>> {
         Err(Box::from(NOT_SUPPORTED_ERROR))
     }
 
-    fn is_powered(&self) -> Result<bool, Box<Error>> {
+    pub fn get_class(&self) -> Result<u32, Box<Error>> {
         Err(Box::from(NOT_SUPPORTED_ERROR))
     }
 
-    fn set_powered(&self, _value: bool) -> Result<(), Box<Error>> {
+    pub fn is_powered(&self) -> Result<bool, Box<Error>> {
         Err(Box::from(NOT_SUPPORTED_ERROR))
     }
 
-    fn is_discoverable(&self) -> Result<bool, Box<Error>> {
+    pub fn set_powered(&self, _value: bool) -> Result<(), Box<Error>> {
         Err(Box::from(NOT_SUPPORTED_ERROR))
     }
 
-    fn set_discoverable(&self, _value: bool) -> Result<(), Box<Error>> {
+    pub fn is_discoverable(&self) -> Result<bool, Box<Error>> {
         Err(Box::from(NOT_SUPPORTED_ERROR))
     }
 
-    fn is_pairable(&self) -> Result<bool, Box<Error>> {
+    pub fn set_discoverable(&self, _value: bool) -> Result<(), Box<Error>> {
         Err(Box::from(NOT_SUPPORTED_ERROR))
     }
 
-    fn set_pairable(&self, _value: bool) -> Result<(), Box<Error>> {
+    pub fn is_pairable(&self) -> Result<bool, Box<Error>> {
         Err(Box::from(NOT_SUPPORTED_ERROR))
     }
 
-    fn get_pairable_timeout(&self) -> Result<u32, Box<Error>> {
+    pub fn set_pairable(&self, _value: bool) -> Result<(), Box<Error>> {
         Err(Box::from(NOT_SUPPORTED_ERROR))
     }
 
-    fn set_pairable_timeout(&self, _value: u32) -> Result<(), Box<Error>> {
+    pub fn get_pairable_timeout(&self) -> Result<u32, Box<Error>> {
         Err(Box::from(NOT_SUPPORTED_ERROR))
     }
 
-    fn get_discoverable_timeout(&self) -> Result<u32, Box<Error>> {
+    pub fn set_pairable_timeout(&self, _value: u32) -> Result<(), Box<Error>> {
         Err(Box::from(NOT_SUPPORTED_ERROR))
     }
 
-    fn set_discoverable_timeout(&self, _value: u32) -> Result<(), Box<Error>> {
+    pub fn get_discoverable_timeout(&self) -> Result<u32, Box<Error>> {
         Err(Box::from(NOT_SUPPORTED_ERROR))
     }
 
-    fn is_discovering(&self) -> Result<bool, Box<Error>> {
+    pub fn set_discoverable_timeout(&self, _value: u32) -> Result<(), Box<Error>> {
         Err(Box::from(NOT_SUPPORTED_ERROR))
     }
 
-    fn get_uuids(&self) -> Result<Vec<String>, Box<Error>> {
+    pub fn is_discovering(&self) -> Result<bool, Box<Error>> {
         Err(Box::from(NOT_SUPPORTED_ERROR))
     }
 
-    fn get_vendor_id_source(&self) -> Result<String, Box<Error>> {
+    pub fn get_uuids(&self) -> Result<Vec<String>, Box<Error>> {
         Err(Box::from(NOT_SUPPORTED_ERROR))
     }
 
-    fn get_vendor_id(&self) -> Result<u32, Box<Error>> {
+    pub fn get_vendor_id_source(&self) -> Result<String, Box<Error>> {
         Err(Box::from(NOT_SUPPORTED_ERROR))
     }
 
-    fn get_product_id(&self) -> Result<u32, Box<Error>> {
+    pub fn get_vendor_id(&self) -> Result<u32, Box<Error>> {
         Err(Box::from(NOT_SUPPORTED_ERROR))
     }
 
-    fn get_device_id(&self) -> Result<u32, Box<Error>> {
+    pub fn get_product_id(&self) -> Result<u32, Box<Error>> {
         Err(Box::from(NOT_SUPPORTED_ERROR))
     }
 
-    fn get_modalias(&self) -> Result<(String, u32, u32, u32), Box<Error>> {
+    pub fn get_device_id(&self) -> Result<u32, Box<Error>> {
+        Err(Box::from(NOT_SUPPORTED_ERROR))
+    }
+
+    pub fn get_modalias(&self) -> Result<(String, u32, u32, u32), Box<Error>> {
         Err(Box::from(NOT_SUPPORTED_ERROR))
     }
 }
