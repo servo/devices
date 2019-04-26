@@ -785,4 +785,3 @@ impl BluetoothGATTDescriptor {
         get_inner_and_call!(@with_bluez_offset, self, BluetoothGATTDescriptor, write_value, values)
     }
 }
-
