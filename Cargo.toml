@@ -2,6 +2,7 @@
 name = "device"
 version = "0.0.1"
 authors = ["The Servo Project Developers"]
+edition = "2018"
 
 [features]
 bluetooth = ["blurz", "blurdroid", "blurmac"]
