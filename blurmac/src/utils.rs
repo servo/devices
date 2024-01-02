@@ -7,7 +7,7 @@
 
 use std::error::Error;
 use std::ffi::{CStr, CString};
-use std::sync::atomic::{AtomicUsize, Ordering, ATOMIC_USIZE_INIT};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time;
 use std::thread;
 
@@ -32,7 +32,8 @@ pub mod nsx {
     }
 
     pub fn string_from_str(string: &str) -> *mut Object {
-        ns::string(CString::new(string).unwrap().as_ptr())
+        let cstring = CString::new(string).unwrap();
+        ns::string(cstring.as_ptr())
     }
 }
 
@@ -78,7 +79,7 @@ pub mod wait {
 
     pub type Timestamp = u64;
 
-    static TIMESTAMP: AtomicUsize = ATOMIC_USIZE_INIT;
+    static TIMESTAMP: AtomicUsize = AtomicUsize::new(0);
 
     pub fn get_timestamp() -> Timestamp {
         TIMESTAMP.fetch_add(1, Ordering::SeqCst) as u64
@@ -88,7 +89,7 @@ pub mod wait {
         ns::number_withunsignedlonglong(get_timestamp())
     }
 
-    pub fn wait_or_timeout<F>(mut f: F) -> Result<(), Box<Error>>
+    pub fn wait_or_timeout<F>(mut f: F) -> Result<(), Box<dyn Error>>
         where F: FnMut() -> bool {
 
         let now = time::Instant::now();
